@@ -1,104 +1,50 @@
-📘 Study Coach — AI-Powered Personalized Study Planner
+# 📘 Study Coach  
+### AI-Powered Personalized Study Planner
 
-Study Coach is a full-stack web application that helps students organize courses, parse syllabi, and generate personalized study plans using AI.
-It is built with:
+Study Coach is a full-stack web application that helps students organize courses, parse syllabi, and automatically generate personalized study plans using AI.
 
-React + Vite (frontend)
+Built with:
 
-Flask + SQLAlchemy (backend)
+- React + Vite (frontend)  
+- Flask + SQLAlchemy (backend)  
+- PDF parsing + LLM integration (coming soon)
 
-Python PDF parsing + LLM integration (coming next)
+---
 
-This project is in active development.
+## 🔧 Tech Stack
 
-🚀 Features (Current)
-Frontend
+| Layer | Technologies |
+|-------|--------------|
+| Frontend | React, Vite, TypeScript, Axios |
+| Backend | Python, Flask, SQLAlchemy, Flask-CORS |
+| Database | SQLite (dev), PostgreSQL (later) |
+| AI | LLM-powered study plan generation (upcoming) |
 
-Modern dashboard interface built with React + Vite
+---
 
-Course manager (add, view, and store courses)
+## ✨ Features
 
-Beautiful dark UI with responsive grid layout
+### ✅ Current
+- Modern dashboard UI  
+- Dark theme with responsive layout  
+- Add and view courses  
+- REST API for storing / retrieving course data  
+- Clean backend architecture (routes, models, services)
 
-Backend
+### 🔮 In Development
+- PDF upload and syllabus parsing  
+- Topic extraction from documents  
+- AI-generated study plan  
+- Daily task breakdown  
+- “Today’s Plan” suggestions  
 
-Flask REST API with CORS enabled
+### 🚀 Future Enhancements
+- User authentication  
+- Google Calendar sync  
+- Progress analytics  
+- AI practice question generator  
 
-SQLite database using SQLAlchemy
+---
 
-Endpoints for creating and retrieving courses
+## 🗂 Project Structure
 
-Clean project structure: routes, models, services
-
-🔮 Roadmap
-Coming Soon
-
-PDF upload and syllabus parsing
-
-Automatic topic extraction
-
-Smart study plan generator (LLM-powered)
-
-Daily tasks and “Today’s Plan” view
-
-User accounts and authentication
-
-Future Ideas
-
-Progress tracking
-
-Study streaks and reminders
-
-Integration with Google Calendar
-
-Practice question generator for each topic
-
-🧩 Project Structure
-study-coach/
-  backend/
-    app.py
-    models.py
-    routes/
-    services/
-    requirements.txt
-  frontend/
-    src/
-      App.tsx
-      api/
-      components/
-    vite.config.ts
-    package.json
-  README.md
-
-🛠️ Local Development
-1. Backend (Flask)
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python3 app.py
-
-
-Runs at:
-
-http://localhost:5000
-
-
-Test health endpoint:
-
-http://localhost:5000/api/health
-
-2. Frontend (React + Vite)
-cd frontend
-npm install
-npm run dev
-
-
-Runs at:
-
-http://localhost:5173
-
-🤝 Contributing
-
-This project is currently maintained personally.
-Issue reports, feedback, and suggestions are welcome as the feature set grows.
