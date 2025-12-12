@@ -42,10 +42,20 @@ if IS_PRODUCTION:
         # Don't crash - use permissive CORS but log warning
         CORS(app, supports_credentials=True)
     else:
-        # Support both with and without trailing slash
-        allowed_origins = [frontend_url.rstrip('/'), frontend_url]
+        # Normalize URL - ensure HTTPS for production
+        if frontend_url.startswith("http://") and IS_PRODUCTION:
+            print(f"⚠️  WARNING: FRONTEND_URL uses HTTP, converting to HTTPS for production")
+            frontend_url = frontend_url.replace("http://", "https://", 1)
+        
+        # Support both with and without trailing slash, and both http/https variants
+        allowed_origins = [
+            frontend_url.rstrip('/'),
+            frontend_url,
+            frontend_url.replace("https://", "http://", 1),  # Allow HTTP too for flexibility
+            frontend_url.replace("http://", "https://", 1).rstrip('/')
+        ]
         # Remove duplicates while preserving order
-        allowed_origins = list(dict.fromkeys(allowed_origins))
+        allowed_origins = list(dict.fromkeys([o for o in allowed_origins if o]))
         print(f"✅ CORS configured for: {allowed_origins}")
         
         CORS(app, 
@@ -125,8 +135,10 @@ except Exception as e:
 
 
 @app.route("/api/health")
+@app.route("/health")
+@app.route("/")
 def health():
-    """Health check endpoint for monitoring."""
+    """Health check endpoint for monitoring and Railway health checks."""
     try:
         # Test MongoDB connection
         from models import db
@@ -140,7 +152,7 @@ def health():
         "environment": "production" if IS_PRODUCTION else "development",
         "database": db_status,
         "timestamp": datetime.utcnow().isoformat()
-    })
+    }), 200
 
 # Error handlers
 @app.errorhandler(404)
