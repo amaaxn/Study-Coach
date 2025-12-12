@@ -53,9 +53,6 @@ def chat_completion(
     Send messages to OpenAI and get completion.
     Uses gpt-4o-mini for cost efficiency (much cheaper than gpt-4).
     For production, consider gpt-4o for better quality when needed.
-    """
-    """
-    Send messages to OpenAI and get completion.
     
     Args:
         messages: List of message dicts with 'role' and 'content'
@@ -66,17 +63,25 @@ def chat_completion(
     Returns:
         Response text from the model
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         openai_client = get_openai_client()
         response = openai_client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            timeout=30.0  # 30 second timeout
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"Error in OpenAI API call: {e}")
+        logger.error(f"Error in OpenAI API call: {e}", exc_info=True)
+        # Don't expose internal errors to users in production
+        import os
+        if os.getenv("FLASK_ENV") == "production":
+            raise Exception("AI service temporarily unavailable. Please try again.")
         raise
 
 
