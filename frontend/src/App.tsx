@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { api } from "./api/client";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { Chatbot } from "./components/Chatbot";
+import { TodaysPlan } from "./components/TodaysPlan";
 import "./animations.css";
 
 interface Course {
@@ -55,6 +57,7 @@ function App() {
   const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -524,6 +527,14 @@ function App() {
           {/* Right: materials + study plan */}
           <section className="panel panel-plan">
             <h2 className="panel-title">Course materials &amp; study plan</h2>
+            
+            {/* Today's Plan Section */}
+            <div style={{ marginBottom: "24px" }}>
+              <TodaysPlan />
+            </div>
+
+            <hr className="panel-divider" />
+
             {selectedCourse ? (
               <>
                 <p className="panel-desc">
@@ -654,6 +665,66 @@ function App() {
             )}
           </section>
         </main>
+
+        {/* Chatbot with smooth animation */}
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            bottom: 0,
+            width: showChatbot ? "420px" : "0",
+            transition: "width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+            pointerEvents: showChatbot ? "auto" : "none",
+            zIndex: 1000,
+          }}
+        >
+          {showChatbot && (
+            <Chatbot
+              courseId={selectedCourseId || undefined}
+              onClose={() => setShowChatbot(false)}
+            />
+          )}
+        </div>
+
+        {/* AI Coach Button - Bottom Right */}
+        <button
+          onClick={() => setShowChatbot(!showChatbot)}
+          className="btn-smooth ai-coach-button"
+          style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            padding: "14px 20px",
+            background: showChatbot 
+              ? "linear-gradient(135deg, #6366f1, #7c3aed)"
+              : "linear-gradient(135deg, #6366f1, #7c3aed)",
+            border: "none",
+            borderRadius: "50px",
+            color: "#fff",
+            fontSize: "15px",
+            fontWeight: 600,
+            fontFamily: "var(--font-body)",
+            cursor: "pointer",
+            boxShadow: "0 8px 24px rgba(99, 102, 241, 0.4)",
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px) scale(1.02)";
+            e.currentTarget.style.boxShadow = "0 12px 32px rgba(99, 102, 241, 0.5)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0) scale(1)";
+            e.currentTarget.style.boxShadow = "0 8px 24px rgba(99, 102, 241, 0.4)";
+          }}
+        >
+          <span>✨</span>
+          {showChatbot ? "Close" : "Ask Study Buddy"}
+        </button>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ from routes.auth import auth_bp
 from routes.courses import courses_bp
 from routes.plans import plans_bp
 from routes.materials import materials_bp
+from routes.chat import chat_bp
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -34,6 +35,7 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(courses_bp, url_prefix="/api/courses")
 app.register_blueprint(plans_bp, url_prefix="/api/plans")
 app.register_blueprint(materials_bp, url_prefix="/api/materials")
+app.register_blueprint(chat_bp, url_prefix="/api/chat")
 
 
 @app.route("/api/health")
