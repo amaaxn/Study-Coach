@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import { api } from "../api/client";
 

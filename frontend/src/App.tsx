@@ -304,7 +304,7 @@ function App() {
     }
   };
 
-  const handleDeleteMaterial = async (materialId: number) => {
+  const handleDeleteMaterial = async (materialId: string) => {
     if (!selectedCourseId) return;
     if (!confirm("Are you sure you want to delete this PDF file?")) return;
 
