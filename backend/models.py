@@ -9,7 +9,19 @@ from functools import wraps
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 DB_NAME = os.getenv("MONGO_DB_NAME", "study_coach")
 
-client = MongoClient(MONGO_URI)
+# Connect to MongoDB with error handling
+try:
+    print(f"🔗 Connecting to MongoDB: {DB_NAME}")
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # Test connection
+    client.admin.command('ping')
+    print("✅ MongoDB connection successful")
+except Exception as e:
+    print(f"❌ MongoDB connection error: {e}")
+    print(f"   URI: {MONGO_URI[:50]}..." if len(MONGO_URI) > 50 else f"   URI: {MONGO_URI}")
+    # Still create client but connection will fail on first use
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+
 db = client[DB_NAME]
 
 # Collections

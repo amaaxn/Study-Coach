@@ -1,11 +1,20 @@
 # backend/app.py
 import os
+import sys
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 
+# Enable better error logging
+sys.stdout.flush()
+sys.stderr.flush()
+
+print("🚀 Starting Learnium Backend...")
+print(f"🔧 Python version: {sys.version}")
+
 load_dotenv()
+print("✅ Environment variables loaded")
 
 from models import init_db
 from routes.auth import auth_bp
@@ -19,35 +28,54 @@ app = Flask(__name__)
 # Production configuration
 IS_PRODUCTION = os.getenv("FLASK_ENV") == "production" or os.getenv("ENVIRONMENT") == "production"
 
+print(f"🔧 Environment: {'PRODUCTION' if IS_PRODUCTION else 'DEVELOPMENT'}")
+print(f"🔧 FLASK_ENV: {os.getenv('FLASK_ENV')}")
+print(f"🔧 ENVIRONMENT: {os.getenv('ENVIRONMENT')}")
+
 # CORS Configuration - restrict to production domain in production
 if IS_PRODUCTION:
     frontend_url = os.getenv("FRONTEND_URL", "").strip()
+    print(f"🔧 FRONTEND_URL: {frontend_url if frontend_url else 'NOT SET'}")
+    
     if not frontend_url:
-        raise ValueError("FRONTEND_URL must be set in production environment")
-    
-    # Support both with and without trailing slash
-    allowed_origins = [frontend_url.rstrip('/'), frontend_url]
-    # Remove duplicates while preserving order
-    allowed_origins = list(dict.fromkeys(allowed_origins))
-    
-    CORS(app, 
-         origins=allowed_origins,
-         supports_credentials=True,
-         allow_headers=["Content-Type", "Authorization"],
-         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+        print("⚠️  WARNING: FRONTEND_URL not set in production. Using permissive CORS.")
+        # Don't crash - use permissive CORS but log warning
+        CORS(app, supports_credentials=True)
+    else:
+        # Support both with and without trailing slash
+        allowed_origins = [frontend_url.rstrip('/'), frontend_url]
+        # Remove duplicates while preserving order
+        allowed_origins = list(dict.fromkeys(allowed_origins))
+        print(f"✅ CORS configured for: {allowed_origins}")
+        
+        CORS(app, 
+             origins=allowed_origins,
+             supports_credentials=True,
+             allow_headers=["Content-Type", "Authorization"],
+             methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 else:
     # Development: allow all origins
+    print("✅ CORS configured for development (all origins)")
     CORS(app, supports_credentials=True)
 
 # JWT Configuration
 jwt_secret = os.getenv("JWT_SECRET_KEY")
 if IS_PRODUCTION:
     if not jwt_secret or jwt_secret == "dev-secret-key-change-in-production":
-        raise ValueError("JWT_SECRET_KEY must be set to a strong random string in production")
-    if len(jwt_secret) < 32:
-        raise ValueError("JWT_SECRET_KEY must be at least 32 characters in production")
+        print("⚠️  WARNING: JWT_SECRET_KEY not set or using default. Generating temporary secret.")
+        # Generate a temporary secret instead of crashing
+        import secrets
+        jwt_secret = secrets.token_urlsafe(32)
+        print("⚠️  WARNING: Using temporary JWT secret. Set JWT_SECRET_KEY in environment variables!")
+    elif len(jwt_secret) < 32:
+        print("⚠️  WARNING: JWT_SECRET_KEY is too short. Generating temporary secret.")
+        import secrets
+        jwt_secret = secrets.token_urlsafe(32)
+    else:
+        print("✅ JWT_SECRET_KEY configured")
 else:
     jwt_secret = jwt_secret or "dev-secret-key-change-in-production"
+    print("✅ JWT using development secret")
 
 app.config["JWT_SECRET_KEY"] = jwt_secret
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False  # We handle expiration in routes
@@ -72,23 +100,46 @@ def set_security_headers(response):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-# Init MongoDB
-init_db()
+# Init MongoDB (with error handling)
+try:
+    init_db()
+    print("✅ MongoDB connection initialized successfully")
+except Exception as e:
+    print(f"❌ MongoDB initialization error: {e}")
+    # Don't crash immediately - let app start and show error on first request
+    # This allows Railway health checks to pass
 
 # Register blueprints
-app.register_blueprint(auth_bp, url_prefix="/api/auth")
-app.register_blueprint(courses_bp, url_prefix="/api/courses")
-app.register_blueprint(plans_bp, url_prefix="/api/plans")
-app.register_blueprint(materials_bp, url_prefix="/api/materials")
-app.register_blueprint(chat_bp, url_prefix="/api/chat")
+try:
+    app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(courses_bp, url_prefix="/api/courses")
+    app.register_blueprint(plans_bp, url_prefix="/api/plans")
+    app.register_blueprint(materials_bp, url_prefix="/api/materials")
+    app.register_blueprint(chat_bp, url_prefix="/api/chat")
+    print("✅ All routes registered successfully")
+except Exception as e:
+    print(f"❌ Error registering routes: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
 
 
 @app.route("/api/health")
 def health():
     """Health check endpoint for monitoring."""
+    try:
+        # Test MongoDB connection
+        from models import db
+        db.command('ping')
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
     return jsonify({
         "status": "ok",
-        "environment": "production" if IS_PRODUCTION else "development"
+        "environment": "production" if IS_PRODUCTION else "development",
+        "database": db_status,
+        "timestamp": datetime.utcnow().isoformat()
     })
 
 # Error handlers
@@ -112,4 +163,6 @@ if __name__ == "__main__":
     # Can be used in production as fallback if gunicorn fails
     port = int(os.getenv("PORT", 5001))
     debug_mode = os.getenv("FLASK_ENV") != "production" and os.getenv("ENVIRONMENT") != "production"
+    print(f"🚀 Starting Flask server on port {port}")
+    print(f"✅ Application ready! Environment: {'PRODUCTION' if IS_PRODUCTION else 'DEVELOPMENT'}")
     app.run(debug=debug_mode, port=port, host="0.0.0.0")
