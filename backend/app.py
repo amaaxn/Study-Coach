@@ -1,30 +1,45 @@
-from flask import Flask
+# backend/app.py
+import os
+from flask import Flask, jsonify
 from flask_cors import CORS
-from models import db, init_db
+from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from models import init_db
+from routes.auth import auth_bp
 from routes.courses import courses_bp
-from routes.materials import materials_bp
 from routes.plans import plans_bp
+from routes.materials import materials_bp
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app, origins="http://localhost:5173", supports_credentials=True)
+app = Flask(__name__)
+CORS(app, supports_credentials=True)
 
-    # For dev: SQLite. Once you want Postgres, change the URI.
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///study_coach.db"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# JWT Configuration
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False  # We handle expiration in routes
+jwt = JWTManager(app)
 
-    init_db(app)
+# Uploads folder
+app.config["UPLOAD_FOLDER"] = os.path.join(os.path.dirname(__file__), "uploads")
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-    app.register_blueprint(courses_bp, url_prefix="/api/courses")
-    app.register_blueprint(materials_bp, url_prefix="/api/materials")
-    app.register_blueprint(plans_bp, url_prefix="/api/plans")
+# Init MongoDB
+init_db()
 
-    @app.route("/api/health")
-    def health():
-        return {"status": "ok"}
+# Register blueprints
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
+app.register_blueprint(courses_bp, url_prefix="/api/courses")
+app.register_blueprint(plans_bp, url_prefix="/api/plans")
+app.register_blueprint(materials_bp, url_prefix="/api/materials")
 
-    return app
+
+@app.route("/api/health")
+def health():
+    return jsonify({"status": "ok"})
+
 
 if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
