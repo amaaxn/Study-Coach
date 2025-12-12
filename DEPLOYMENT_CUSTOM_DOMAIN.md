@@ -81,14 +81,20 @@ This guide covers deploying Learnium with a **custom domain** (not .vercel.app).
 4. Import your GitHub repository
 
 ### 2.2 Configure Frontend Build
-1. **Root Directory:**
+1. **Root Directory (CRITICAL):**
+   - Go to "Settings" → "General" → "Root Directory"
+   - Click "Edit"
    - Set to: `frontend`
+   - **This tells Vercel to only deploy the frontend, not the backend!**
+   - Click "Save"
 
-2. **Build Settings:**
-   - Framework Preset: **Vite**
+2. **Build Settings (should auto-detect after setting root):**
+   - Framework Preset: **Vite** (should auto-detect)
    - Build Command: `npm run build`
    - Output Directory: `dist`
    - Install Command: `npm install`
+   
+   **Note:** If you see "No flask entrypoint found" error, it means Root Directory is not set correctly. Make sure it's set to `frontend`.
 
 3. **Environment Variables:**
    Add in Vercel dashboard:
