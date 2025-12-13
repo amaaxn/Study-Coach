@@ -79,8 +79,9 @@ if IS_PRODUCTION:
         CORS(app, 
              origins=allowed_origins,
              supports_credentials=True,
-             allow_headers=["Content-Type", "Authorization"],
-             methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+             allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+             methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             max_age=3600)  # Cache preflight for 1 hour
 else:
     # Development: allow all origins
     print("✅ CORS configured for development (all origins)")
@@ -126,6 +127,15 @@ def set_security_headers(response):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Debug: Log CORS headers in production (helpful for debugging)
+    if IS_PRODUCTION and request.method == "OPTIONS":
+        print(f"🔍 OPTIONS request from origin: {request.headers.get('Origin', 'unknown')}")
+        if 'Access-Control-Allow-Origin' in response.headers:
+            print(f"✅ CORS header set: {response.headers['Access-Control-Allow-Origin']}")
+        else:
+            print(f"❌ CORS header NOT set for origin: {request.headers.get('Origin', 'unknown')}")
+    
     return response
 
 # Init MongoDB - defer actual connection until first use (fork-safe)
