@@ -1,9 +1,16 @@
 import axios from "axios";
 
 // Use environment variable for API URL in production, or default to /api for dev
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+// If VITE_API_URL is set, use it directly. Otherwise use /api (relative to frontend domain)
+// NOTE: VITE_API_URL should include /api suffix (e.g., https://backend.com/api)
+let API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
-console.log("API Base URL:", API_BASE_URL);
+// Ensure API_BASE_URL ends with /api if it's a full URL without it
+if (API_BASE_URL.startsWith("http") && !API_BASE_URL.endsWith("/api")) {
+    API_BASE_URL = API_BASE_URL.endsWith("/") ? API_BASE_URL + "api" : API_BASE_URL + "/api";
+}
+
+console.log("🌐 API Base URL:", API_BASE_URL);
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

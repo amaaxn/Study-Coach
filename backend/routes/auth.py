@@ -7,9 +7,12 @@ from models import User
 auth_bp = Blueprint("auth", __name__)
 
 
-@auth_bp.route("/register", methods=["POST"])
+@auth_bp.route("/register", methods=["POST", "OPTIONS"])
 def register():
     """Register a new user."""
+    if request.method == "OPTIONS":
+        return "", 200
+    
     try:
         body = request.get_json() or {}
         
@@ -55,9 +58,12 @@ def register():
         return jsonify({"error": f"Failed to register: {str(e)}"}), 500
 
 
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route("/login", methods=["POST", "OPTIONS"])
 def login():
     """Login and get access token."""
+    if request.method == "OPTIONS":
+        return "", 200
+    
     try:
         body = request.get_json() or {}
         

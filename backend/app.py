@@ -127,7 +127,10 @@ try:
     app.register_blueprint(plans_bp, url_prefix="/api/plans")
     app.register_blueprint(materials_bp, url_prefix="/api/materials")
     app.register_blueprint(chat_bp, url_prefix="/api/chat")
+    
+    # Debug: Print registered auth routes
     print("✅ All routes registered successfully")
+    print(f"   Auth routes: POST /api/auth/register, POST /api/auth/login, GET /api/auth/me")
 except Exception as e:
     print(f"❌ Error registering routes: {e}")
     import traceback
