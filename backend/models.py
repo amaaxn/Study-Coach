@@ -9,37 +9,100 @@ from functools import wraps
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 DB_NAME = os.getenv("MONGO_DB_NAME", "study_coach")
 
-# Connect to MongoDB with error handling
-try:
-    print(f"🔗 Connecting to MongoDB: {DB_NAME}")
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    # Test connection
-    client.admin.command('ping')
-    print("✅ MongoDB connection successful")
-except Exception as e:
-    print(f"❌ MongoDB connection error: {e}")
-    print(f"   URI: {MONGO_URI[:50]}..." if len(MONGO_URI) > 50 else f"   URI: {MONGO_URI}")
-    # Still create client but connection will fail on first use
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+# Don't initialize client at module level - causes fork-safety issues with Gunicorn
+# Initialize lazily on first use
+_client = None
+_db = None
 
-db = client[DB_NAME]
+def get_client():
+    """Get MongoDB client, initializing if needed (fork-safe)."""
+    global _client
+    if _client is None:
+        try:
+            print(f"🔗 Connecting to MongoDB: {DB_NAME}")
+            _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+            # Test connection
+            _client.admin.command('ping')
+            print("✅ MongoDB connection successful")
+        except Exception as e:
+            print(f"❌ MongoDB connection error: {e}")
+            print(f"   URI: {MONGO_URI[:50]}..." if len(MONGO_URI) > 50 else f"   URI: {MONGO_URI}")
+            raise
+    return _client
 
-# Collections
-users_collection = db.users
-courses_collection = db.courses
-materials_collection = db.materials
-study_tasks_collection = db.study_tasks
+def get_db():
+    """Get MongoDB database, initializing client if needed."""
+    global _db
+    if _db is None:
+        _db = get_client()[DB_NAME]
+    return _db
+
+# For backward compatibility, create lazy properties
+class LazyDB:
+    def __getattr__(self, name):
+        return getattr(get_db(), name)
+
+db = LazyDB()
+client = None  # Will be set on first use
+
+# Collections - use lazy initialization
+def get_collection(name):
+    """Get a collection by name (fork-safe)."""
+    return get_db()[name]
+
+def get_users_collection():
+    return get_collection("users")
+
+def get_courses_collection():
+    return get_collection("courses")
+
+def get_materials_collection():
+    return get_collection("materials")
+
+def get_study_tasks_collection():
+    return get_collection("study_tasks")
+
+# For backward compatibility, create lazy accessors
+class LazyCollection:
+    def __init__(self, name):
+        self.name = name
+    def __getattr__(self, attr):
+        return getattr(get_collection(self.name), attr)
+    def find(self, *args, **kwargs):
+        return get_collection(self.name).find(*args, **kwargs)
+    def find_one(self, *args, **kwargs):
+        return get_collection(self.name).find_one(*args, **kwargs)
+    def insert_one(self, *args, **kwargs):
+        return get_collection(self.name).insert_one(*args, **kwargs)
+    def update_one(self, *args, **kwargs):
+        return get_collection(self.name).update_one(*args, **kwargs)
+    def delete_many(self, *args, **kwargs):
+        return get_collection(self.name).delete_many(*args, **kwargs)
+    def create_index(self, *args, **kwargs):
+        return get_collection(self.name).create_index(*args, **kwargs)
+    def update_many(self, *args, **kwargs):
+        return get_collection(self.name).update_many(*args, **kwargs)
+
+users_collection = LazyCollection("users")
+courses_collection = LazyCollection("courses")
+materials_collection = LazyCollection("materials")
+study_tasks_collection = LazyCollection("study_tasks")
 
 
 def init_db():
     """Initialize database indexes."""
-    # Create indexes for better query performance
-    users_collection.create_index("email", unique=True)
+    # Create indexes for better query performance (fork-safe - called after fork)
+    try:
+        get_users_collection().create_index("email", unique=True)
     courses_collection.create_index("user_id")
     courses_collection.create_index([("user_id", 1), ("name", 1)])
     materials_collection.create_index("course_id")
-    study_tasks_collection.create_index("course_id")
-    study_tasks_collection.create_index([("course_id", 1), ("date", 1)])
+        get_study_tasks_collection().create_index("course_id")
+        get_study_tasks_collection().create_index([("course_id", 1), ("date", 1)])
+        print("✅ Database indexes created successfully")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not create indexes: {e}")
+        # Don't fail startup if indexes can't be created
 
 
 class User:

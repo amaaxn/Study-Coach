@@ -111,14 +111,14 @@ def set_security_headers(response):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-# Init MongoDB (with error handling)
+# Init MongoDB - defer actual connection until first use (fork-safe)
+# Just initialize indexes, which will connect on first use
 try:
     init_db()
-    print("✅ MongoDB connection initialized successfully")
+    print("✅ MongoDB initialization setup complete (connection deferred for fork-safety)")
 except Exception as e:
-    print(f"❌ MongoDB initialization error: {e}")
-    # Don't crash immediately - let app start and show error on first request
-    # This allows Railway health checks to pass
+    print(f"⚠️  Warning: MongoDB initialization setup error: {e}")
+    # Don't crash - connection will happen on first use
 
 # Register blueprints
 try:
@@ -142,7 +142,8 @@ def health():
     """Health check endpoint for monitoring and Railway health checks."""
     try:
         # Test MongoDB connection
-        from models import db
+        from models import get_db
+        db = get_db()
         db.command('ping')
         db_status = "connected"
     except Exception as e:
