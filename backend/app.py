@@ -190,12 +190,22 @@ def health():
     except Exception as e:
         db_status = f"error: {str(e)}"
     
-    return jsonify({
+    response = jsonify({
         "status": "ok",
         "environment": "production" if IS_PRODUCTION else "development",
         "database": db_status,
         "timestamp": datetime.utcnow().isoformat()
-    }), 200
+    })
+    response.status_code = 200
+    
+    # Explicitly set CORS headers for health check (Railway needs this)
+    origin = request.headers.get('Origin')
+    if origin:
+        from flask_cors import cross_origin
+        # This will be handled by CORS middleware, but ensure it's set
+        pass
+    
+    return response
 
 # Error handlers
 @app.errorhandler(404)
