@@ -2,7 +2,10 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import timedelta
 import bcrypt
+import logging
 from models import User
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -14,6 +17,7 @@ def register():
         return "", 200
     
     try:
+        logger.info(f"Register request from {request.remote_addr}")
         body = request.get_json() or {}
         
         email = body.get("email", "").strip().lower()
@@ -55,6 +59,7 @@ def register():
         }), 201
     
     except Exception as e:
+        logger.error(f"Registration error: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to register: {str(e)}"}), 500
 
 
@@ -65,6 +70,7 @@ def login():
         return "", 200
     
     try:
+        logger.info(f"Login request from {request.remote_addr} for {request.get_json().get('email', 'unknown') if request.get_json() else 'unknown'}")
         body = request.get_json() or {}
         
         email = body.get("email", "").strip().lower()
@@ -98,6 +104,7 @@ def login():
         }), 200
     
     except Exception as e:
+        logger.error(f"Login error: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to login: {str(e)}"}), 500
 
 
