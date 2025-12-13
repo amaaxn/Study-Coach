@@ -40,8 +40,13 @@ if IS_PRODUCTION:
     
     if not frontend_url:
         print("⚠️  WARNING: FRONTEND_URL not set in production. Using permissive CORS.")
+        print("⚠️  This allows ALL origins. Set FRONTEND_URL for security!")
         # Don't crash - use permissive CORS but log warning
-        CORS(app, supports_credentials=True)
+        CORS(app, 
+             supports_credentials=True,
+             allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+             methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             max_age=3600)
     else:
         # Normalize URL - ensure HTTPS for production
         if frontend_url.startswith("http://") and IS_PRODUCTION:
@@ -75,6 +80,7 @@ if IS_PRODUCTION:
         # Remove duplicates while preserving order
         allowed_origins = list(dict.fromkeys([o for o in allowed_origins if o]))
         print(f"✅ CORS configured for: {allowed_origins}")
+        print(f"🔍 Will allow requests from these origins: {', '.join(allowed_origins)}")
         
         CORS(app, 
              origins=allowed_origins,
@@ -128,13 +134,18 @@ def set_security_headers(response):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
-    # Debug: Log CORS headers in production (helpful for debugging)
-    if IS_PRODUCTION and request.method == "OPTIONS":
-        print(f"🔍 OPTIONS request from origin: {request.headers.get('Origin', 'unknown')}")
+    # Debug: Log CORS headers (helpful for debugging)
+    origin = request.headers.get('Origin', 'unknown')
+    if request.method == "OPTIONS":
+        print(f"🔍 OPTIONS preflight from origin: {origin}")
         if 'Access-Control-Allow-Origin' in response.headers:
-            print(f"✅ CORS header set: {response.headers['Access-Control-Allow-Origin']}")
+            print(f"✅ CORS Allow-Origin header: {response.headers['Access-Control-Allow-Origin']}")
         else:
-            print(f"❌ CORS header NOT set for origin: {request.headers.get('Origin', 'unknown')}")
+            print(f"❌ WARNING: CORS Allow-Origin header NOT found in response for origin: {origin}")
+            print(f"   This will cause CORS errors! Check CORS configuration.")
+    elif origin != 'unknown' and IS_PRODUCTION:
+        # Log actual requests too for debugging
+        print(f"📡 {request.method} {request.path} from origin: {origin}")
     
     return response
 
