@@ -90,13 +90,13 @@ study_tasks_collection = LazyCollection("study_tasks")
 
 
 def init_db():
-    """Initialize database indexes."""
-    # Create indexes for better query performance (fork-safe - called after fork)
+    """Initialize database indexes (fork-safe - called after fork)."""
+    # Create indexes for better query performance
     try:
         get_users_collection().create_index("email", unique=True)
-    courses_collection.create_index("user_id")
-    courses_collection.create_index([("user_id", 1), ("name", 1)])
-    materials_collection.create_index("course_id")
+        get_courses_collection().create_index("user_id")
+        get_courses_collection().create_index([("user_id", 1), ("name", 1)])
+        get_materials_collection().create_index("course_id")
         get_study_tasks_collection().create_index("course_id")
         get_study_tasks_collection().create_index([("course_id", 1), ("date", 1)])
         print("✅ Database indexes created successfully")
